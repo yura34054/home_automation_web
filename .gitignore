@@ -1,0 +1,12 @@
+.vscode/
+/venv/
+media/
+local_settings.py
+__pycache__
+*.pyc
+/.env
+.idea
+*.sqlite3
+.pytest_cache
+django-static
+vendor
