@@ -10,6 +10,9 @@ RUN chmod +x /wait
 WORKDIR /app
 
 COPY Pipfile Pipfile.lock /app/
+RUN apt-get update && \
+    apt-get -y install gcc && \
+    rm -rf /var/lib/apt/lists/*
 RUN pip install pipenv && pipenv install --system
 
 COPY ./src/ /app/
