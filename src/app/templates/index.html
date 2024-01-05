@@ -6,5 +6,16 @@
 </head>
 <body>
     <p>hello world</p>
+
+    {% block content %}
+        {{ sensor_reading.sensor.controller_name }}
+
+        <p>temperature: {{ sensor_reading.temperature }} C</p>
+        <p>humidity: {{ sensor_reading.humidity }} %</p>
+        <p>carbon_dioxide: {{ sensor_reading.carbon_dioxide }}ppm</p>
+        <p>voc_index: {{ sensor_reading.voc_index }}</p>
+        <p>nox_index: {{ sensor_reading.nox_index }}</p>
+
+    {% endblock content %}
 </body>
 </html>
