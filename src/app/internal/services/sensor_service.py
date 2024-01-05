@@ -21,7 +21,7 @@ class SensorReadingGenerator:
         raw_voc_data: [int],
         raw_nox_data: [int],
     ):
-        sensor = Sensor.objects.get(controller_name=controller_name)
+        sensor = Sensor.objects.get(name=controller_name)
         if sensor.api_key != api_key:
             return False
 

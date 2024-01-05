@@ -5,16 +5,16 @@
     <title>Title</title>
 </head>
 <body>
-    <p>hello world</p>
+{#    <p>hello world</p>#}
 
     {% block content %}
-        {{ sensor_reading.sensor.controller_name }}
+        {{ sensor_reading.sensor.name }}
 
-        <p>temperature: {{ sensor_reading.temperature }} C</p>
-        <p>humidity: {{ sensor_reading.humidity }} %</p>
-        <p>carbon_dioxide: {{ sensor_reading.carbon_dioxide }}ppm</p>
-        <p>voc_index: {{ sensor_reading.voc_index }}</p>
-        <p>nox_index: {{ sensor_reading.nox_index }}</p>
+        <p><a href="{% url 'temperature_chart' sensor_reading.sensor.name %}">temperature</a>: {{ sensor_reading.temperature }} C </p>
+        <p><a href="{% url 'humidity_chart' sensor_reading.sensor.name %}">humidity</a>: {{ sensor_reading.humidity }} %</p>
+        <p><a href="{% url 'carbon_dioxide_chart' sensor_reading.sensor.name %}">carbon_dioxide</a>: {{ sensor_reading.carbon_dioxide }}ppm</p>
+        <p><a href="{% url 'voc_index_chart' sensor_reading.sensor.name %}">voc_index</a>: {{ sensor_reading.voc_index }}</p>
+        <p><a href="{% url 'nox_index_chart' sensor_reading.sensor.name %}">nox_index</a>: {{ sensor_reading.nox_index }}</p>
 
     {% endblock content %}
 </body>

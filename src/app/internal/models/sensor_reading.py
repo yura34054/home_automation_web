@@ -22,4 +22,4 @@ class SensorReading(models.Model):
         return f"{self.sensor}: {self.created_on}"
 
     class Meta:
-        ordering = ('created_on',)
+        ordering = ("-created_on",)
