@@ -81,8 +81,8 @@ void setup_sgp41() {
 
     sgp41_conditioning--;
     delay(1000);
-  } 
-  
+  }
+
   Wire.beginTransmission(SGP41_ADDRESS);
   Wire.write(0x26);
   Wire.write(0x19);
@@ -114,11 +114,11 @@ void get_sgp41_data(uint16_t temperature, uint16_t humidity, uint16_t *raw_voc, 
 
   uint8_t data[6], temp_data[2], hum_data[2];
 
-  hum_data[0]=humidity & 0xff;
-  hum_data[1]=(humidity >> 8);
+  hum_data[0]=(humidity >> 8);
+  hum_data[1]=humidity & 0xff;
 
-  temp_data[0]=temperature & 0xff;
-  temp_data[1]=(temperature >> 8);
+  temp_data[0]=(temperature >> 8);
+  temp_data[1]=temperature & 0xff;
 
   Wire.beginTransmission(SGP41_ADDRESS);
   Wire.write(0x26);
