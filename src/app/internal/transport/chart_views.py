@@ -36,7 +36,7 @@ def humidity_chart(request, sensor_name):
         x=[c.created_on for c in readings],
         y=[c.humidity for c in readings],
         title="humidity",
-        labels={"x": "Time", "y": "humidity %"},
+        labels={"x": "Time", "y": "Relative humidity %"},
     )
 
     return __render_chart(request, fig)
@@ -51,7 +51,7 @@ def temperature_chart(request, sensor_name):
         x=[c.created_on for c in readings],
         y=[c.temperature for c in readings],
         title="temperature",
-        labels={"x": "Time", "y": "temperature C"},
+        labels={"x": "Time", "y": "Temperature C"},
     )
 
     return __render_chart(request, fig)
@@ -66,7 +66,7 @@ def voc_index_chart(request, sensor_name):
         x=[c.created_on for c in readings],
         y=[c.voc_index for c in readings],
         title="voc_index",
-        labels={"x": "Time", "y": "voc_index"},
+        labels={"x": "Time", "y": "VOC index"},
     )
 
     return __render_chart(request, fig)
@@ -81,7 +81,7 @@ def nox_index_chart(request, sensor_name):
         x=[c.created_on for c in readings],
         y=[c.nox_index for c in readings],
         title="nox_index",
-        labels={"x": "Time", "y": "nox_index"},
+        labels={"x": "Time", "y": "NOx index"},
     )
 
     return __render_chart(request, fig)

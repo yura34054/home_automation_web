@@ -5,17 +5,20 @@
     <title>Title</title>
 </head>
 <body>
-{#    <p>hello world</p>#}
 
     {% block content %}
-        {{ sensor_reading.sensor.name }}
+        {% for sensor in sensor_list %}
+            {{ sensor.name }}
+            {% with reading=sensor.sensorreading_set.first %}
 
-        <p><a href="{% url 'temperature_chart' sensor_reading.sensor.name %}">temperature</a>: {{ sensor_reading.temperature }} C </p>
-        <p><a href="{% url 'humidity_chart' sensor_reading.sensor.name %}">humidity</a>: {{ sensor_reading.humidity }} %</p>
-        <p><a href="{% url 'carbon_dioxide_chart' sensor_reading.sensor.name %}">carbon_dioxide</a>: {{ sensor_reading.carbon_dioxide }}ppm</p>
-        <p><a href="{% url 'voc_index_chart' sensor_reading.sensor.name %}">voc_index</a>: {{ sensor_reading.voc_index }}</p>
-        <p><a href="{% url 'nox_index_chart' sensor_reading.sensor.name %}">nox_index</a>: {{ sensor_reading.nox_index }}</p>
+                <p><a href="{% url 'temperature_chart' sensor.name %}">Temperature</a>: {{ reading.temperature }} C </p>
+                <p><a href="{% url 'humidity_chart' sensor.name %}">Humidity</a>: {{ reading.humidity }} %</p>
+                <p><a href="{% url 'carbon_dioxide_chart' sensor.name %}">Carbon dioxide</a>: {{ reading.carbon_dioxide }}ppm</p>
+                <p><a href="{% url 'voc_index_chart' sensor.name %}">VOC index</a>: {{ reading.voc_index }}</p>
+                <p><a href="{% url 'nox_index_chart' sensor.name %}">NOx index</a>: {{ reading.nox_index }}</p>
 
+            {% endwith %}
+        {% endfor %}
     {% endblock content %}
 </body>
 </html>
