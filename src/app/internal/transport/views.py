@@ -7,8 +7,6 @@ from django.views.decorators.csrf import csrf_exempt
 from app.internal.models import SensorReading
 from app.internal.services import sensor_service
 
-sensor_reading_generator = sensor_service.SensorReadingGenerator()
-
 
 def index(request):
     context = {"sensor_reading": SensorReading.objects.first()}
@@ -22,14 +20,20 @@ def create_sensor_reading(request):
 
     data = json.loads(request.body)
 
-    status = sensor_reading_generator.update(
+    status = sensor_service.create_sensor_reading(
         controller_name=data["controller_name"],
         api_key=data["api_key"],
+
         temperature=data["temperature"],
         humidity=data["humidity"],
         carbon_dioxide=data["carbon_dioxide"],
-        raw_voc_data=data["raw_voc_data"],
-        raw_nox_data=data["raw_nox_data"],
+
+        voc_index=data["voc_index"],
+        nox_index=data["nox_index"],
+
+        pm1_0=data["pm1.0"],
+        pm2_5=data["pm2.5"],
+        pm10=data["pm10"],
     )
 
     if status:

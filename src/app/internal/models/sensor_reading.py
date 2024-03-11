@@ -11,12 +11,14 @@ class SensorReading(models.Model):
 
     temperature = models.FloatField()
     humidity = models.FloatField()
-    carbon_dioxide = models.IntegerField()
+    carbon_dioxide = models.FloatField()
 
-    voc_raw = models.FloatField()
-    nox_raw = models.FloatField()
     voc_index = models.IntegerField()
     nox_index = models.IntegerField()
+
+    pm1_0 = models.FloatField()
+    pm2_5 = models.FloatField()
+    pm10 = models.FloatField()
 
     def __str__(self):
         return f"{self.sensor}: {self.created_on}"

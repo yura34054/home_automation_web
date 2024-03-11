@@ -1,18 +1,49 @@
 #include <Wire.h>
 #include <WiFi.h>
 
+#include <VOCGasIndexAlgorithm.h>
+#include <NOxGasIndexAlgorithm.h>
+
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-
 #include <Adafruit_NeoPixel.h>
+
 
 #define PIN_WS2812B 8  // The ESP32 pin GPIO16 connected to WS2812B
 #define NUM_PIXELS 1   // The number of LEDs (pixels) on WS2812B LED strip
+
+#define TXD_PIN (GPIO_NUM_5)
+#define RXD_PIN (GPIO_NUM_4)
+
 
 Adafruit_NeoPixel ws2812b(NUM_PIXELS, PIN_WS2812B, NEO_GRB + NEO_KHZ800);
 
 const int16_t SCD40_ADDRESS = 0x62;
 const int16_t SGP41_ADDRESS = 0x59;
+
+uint8_t scd40_buffer_index = 0;
+uint16_t co2_buffer[8];
+uint16_t temperature_buffer[8];
+uint16_t humidity_buffer[8];
+
+VOCGasIndexAlgorithm voc_algorithm;
+NOxGasIndexAlgorithm nox_algorithm;
+uint16_t voc_index;
+uint16_t nox_index;
+
+uint8_t pmsa003_buffer_index = 0;
+uint16_t pm1_0_buffer[16];
+uint16_t pm2_5_buffer[16];
+uint16_t pm10_buffer[16];
+
+const uint16_t scd40_read_time = 5000;
+const uint16_t sgp41_read_time = 1000;
+const uint16_t data_send_time = 60000;
+
+unsigned long scd40_previous_time = 0;
+unsigned long sgp41_previous_time = 0;
+unsigned long data_previous_time = 0;
+
 
 // Replace with your network credentials (STATION)
 const char* WIFI_SSID = "";
@@ -23,23 +54,33 @@ const char* API_KEY = "";
 const char* SERVER_URL = "";
 
 
+float get_array_avg(uint16_t buffer[], int length) {
+  float average;
+
+  for (uint8_t i = 0; i < length; i++) {
+    average += buffer[i];
+  }
+  return average / length;
+}
+
+
 uint8_t CalcCrc(uint8_t data[2]) {
   uint8_t crc = 0xFF;
-  for(int i = 0; i < 2; i++) {
+  for (int i = 0; i < 2; i++) {
     crc ^= data[i];
-    for(uint8_t bit = 8; bit > 0; --bit) {
-      if(crc & 0x80) {
+    for (uint8_t bit = 8; bit > 0; --bit) {
+      if (crc & 0x80) {
         crc = (crc << 1) ^ 0x31u;
       } else {
         crc = (crc << 1);
-        }
       }
     }
+  }
   return crc;
 }
 
 
-void read_i2c(uint8_t *data, uint8_t length, int16_t address) {
+void read_i2c(uint8_t* data, uint8_t length, int16_t address) {
   uint8_t counter;
   counter = 0;
 
@@ -50,115 +91,21 @@ void read_i2c(uint8_t *data, uint8_t length, int16_t address) {
 }
 
 
-void setup_scd40() {
-  // setup scd40 according to datasheet
-  // you have to wait 5 seconds for the first measurement
-
-  Wire.beginTransmission(SCD40_ADDRESS);
-  Wire.write(0x21);
-  Wire.write(0xb1);
-  Wire.endTransmission();
-}
-
-
-void setup_sgp41() {
-  // setup sgp41 according to datasheet
-  // preforms conditioning for 10 seconds
-
-  int sgp41_conditioning = 10;
-
-  while(sgp41_conditioning > 0) {
-    Wire.beginTransmission(SGP41_ADDRESS);
-    Wire.write(0x26);
-    Wire.write(0x12);
-    Wire.write(0x80);
-    Wire.write(0x00);
-    Wire.write(0xA2);
-    Wire.write(0x66);
-    Wire.write(0x66);
-    Wire.write(0x93);
-    Wire.endTransmission();
-
-    sgp41_conditioning--;
-    delay(1000);
-  }
-
-  Wire.beginTransmission(SGP41_ADDRESS);
-  Wire.write(0x26);
-  Wire.write(0x19);
-  Wire.endTransmission();
-}
-
-
-void get_scd40_data(uint16_t *co2, uint16_t *temperature, uint16_t *humidity) {
-  // get readings from scd40 sensor without conversion
-
-  uint8_t data[12];
-
-  Wire.beginTransmission(SCD40_ADDRESS);
-  Wire.write(0xec);
-  Wire.write(0x05);
-  Wire.endTransmission();
-
-  read_i2c(data, 12, SCD40_ADDRESS);
-
-  *co2 = ((uint16_t)data[0] << 8 | data[1]);
-  *temperature = ((uint16_t)data[3] << 8 | data[4]);
-  *humidity = ((uint16_t)data[6] << 8 | data[7]);
-}
-
-
-void get_sgp41_data(uint16_t temperature, uint16_t humidity, uint16_t *raw_voc, uint16_t *raw_nox) {
-  // send temperature and humidity readings to sgp41 for a more accurate reading
-  // read VOC and NOx data
-
-  uint8_t data[6], temp_data[2], hum_data[2];
-
-  hum_data[0]=(humidity >> 8);
-  hum_data[1]=humidity & 0xff;
-
-  temp_data[0]=(temperature >> 8);
-  temp_data[1]=temperature & 0xff;
-
-  Wire.beginTransmission(SGP41_ADDRESS);
-  Wire.write(0x26);
-  Wire.write(0x19);
-
-  // write relative humidity
-  Wire.write(hum_data[0]);
-  Wire.write(hum_data[1]);
-  Wire.write(CalcCrc(hum_data));
-
-  // write temperature
-  Wire.write(temp_data[0]);
-  Wire.write(temp_data[1]);
-  Wire.write(CalcCrc(temp_data));
-  Wire.endTransmission();
-
-  delay(50);
-
-  read_i2c(data, 6, SGP41_ADDRESS);
-
-  *raw_voc = ((uint16_t)data[0] << 8 | data[1]);
-  *raw_nox = ((uint16_t)data[3] << 8 | data[4]);
-}
-
-
-void change_led (uint16_t co2) {
+void change_led(uint16_t co2) {
   // change color of the LED according to co2 concentration
   // does not call for the LED update
 
-  if (co2 >= 1600) { // set red if concentration > 1600ppm
+  if (co2 >= 1600) {  // set red if concentration > 1600ppm
     ws2812b.setPixelColor(0, ws2812b.Color(10, 0, 0));
     return;
   }
 
-  if (co2 >= 1000) { // set red if concentration between 1600 and 1000ppm
+  if (co2 >= 1000) {  // set red if concentration between 1600 and 1000ppm
     ws2812b.setPixelColor(0, ws2812b.Color(5, 5, 0));
     return;
   }
 
-  if (co2 >= 300) { // set green if concentration between 1000 and 300ppm
+  if (co2 >= 300) {  // set green if concentration between 1000 and 300ppm
     ws2812b.setPixelColor(0, ws2812b.Color(0, 10, 0));
     return;
   }
@@ -172,11 +119,11 @@ void setup() {
   // Serial.begin(115200);
   ws2812b.begin();
   Wire.begin();
-  
-  ws2812b.setPixelColor(0, ws2812b.Color(0, 100, 100));
-  ws2812b.show(); 
 
-  // while(!Serial);
+  ws2812b.setPixelColor(0, ws2812b.Color(0, 100, 100));
+  ws2812b.show();
+
+  // while (!Serial);
   // Serial.print("setup started\n");
 
   WiFi.mode(WIFI_STA);
@@ -188,6 +135,7 @@ void setup() {
 
   setup_scd40();
   setup_sgp41();
+  setup_pmsa003();
 
   // Serial.print("setup complete\n");
   ws2812b.clear();
@@ -196,39 +144,73 @@ void setup() {
 
 
 void loop() {
-  HTTPClient http;
-  uint16_t co2, temperature, humidity, raw_voc, raw_nox;
-  
-  get_scd40_data(&co2, &temperature, &humidity);
-  change_led(co2);
-  ws2812b.show(); 
+  unsigned long currentTime = millis();
 
-  StaticJsonDocument<384> doc;
+  if (Serial1.available() >= 32) {
+    uint16_t PM1_0, PM2_5, PM10;
 
-  doc["controller_name"] = CONTROLLER_NAME;
-  doc["api_key"] = API_KEY;
+    if (!read_pmsa003(&PM1_0, &PM2_5, &PM10)) {
+      // Serial.println("UART read error");
+      setup_pmsa003();
+      return;
+    }
 
-  // floating point conversion according to datasheet
-  doc["carbon_dioxide"] = co2;
-  doc["temperature"] = -45 + 175 * (float)(temperature) / 65536;
-  doc["humidity"] = 100 * (float)(humidity) / 65536;
-
-  JsonArray raw_voc_data = doc.createNestedArray("raw_voc_data");
-  JsonArray raw_nox_data = doc.createNestedArray("raw_nox_data");
-
-  for(int i=1; i<=5; i++) {
-    get_sgp41_data(temperature, humidity, &raw_voc, &raw_nox); 
-    raw_voc_data.add(raw_voc);
-    raw_nox_data.add(raw_nox);
-
-    delay(950);
+    pmsa003_buffer_index++;
+    pm1_0_buffer[pmsa003_buffer_index & 0xf] = PM1_0;
+    pm2_5_buffer[pmsa003_buffer_index & 0xf] = PM2_5;
+    pm10_buffer[pmsa003_buffer_index & 0xf] = PM10;
   }
 
-  http.begin(SERVER_URL + String("api/create_sensor_reading"));
+  if (currentTime - scd40_previous_time >= scd40_read_time) {
+    scd40_previous_time = currentTime;
+    uint16_t co2, temperature, humidity;
+    get_scd40_data(&co2, &temperature, &humidity);
 
-  String requestBody;
-  serializeJson(doc, requestBody);
-  http.POST(requestBody);
+    scd40_buffer_index++;
+    co2_buffer[scd40_buffer_index & 0x7] = co2;
+    temperature_buffer[scd40_buffer_index & 0x7] = temperature;
+    humidity_buffer[scd40_buffer_index & 0x7] = humidity;
 
-  http.end();
+    change_led(co2);
+    ws2812b.show();
+  }
+
+  if (currentTime - sgp41_previous_time >= sgp41_read_time) {
+    sgp41_previous_time = currentTime;
+
+    uint16_t raw_voc, raw_nox;
+    get_sgp41_data(temperature_buffer[scd40_buffer_index & 0x7], humidity_buffer[scd40_buffer_index & 0x7], &raw_voc, &raw_nox);
+
+    voc_index = voc_algorithm.process(raw_voc);
+    nox_index = nox_algorithm.process(raw_nox);
+  }
+
+  if (currentTime - data_previous_time >= data_send_time) {
+    data_previous_time = currentTime;
+
+    HTTPClient http;
+    JsonDocument doc;
+
+    doc["controller_name"] = CONTROLLER_NAME;
+    doc["api_key"] = API_KEY;
+
+    doc["carbon_dioxide"] = get_array_avg(co2_buffer, 8);
+    doc["temperature"] = -45 + 175 * get_array_avg(temperature_buffer, 8) / 65536;
+    doc["humidity"] = 100 * get_array_avg(humidity_buffer, 8) / 65536;
+
+    doc["voc_index"] = voc_index;
+    doc["nox_index"] = nox_index;
+
+    doc["pm1.0"] = get_array_avg(pm1_0_buffer, 16);
+    doc["pm2.5"] = get_array_avg(pm2_5_buffer, 16);
+    doc["pm10"] = get_array_avg(pm10_buffer, 16);
+
+    http.begin(SERVER_URL + String("api/create_sensor_reading"));
+
+    String requestBody;
+    serializeJson(doc, requestBody);
+    http.POST(requestBody);
+
+    http.end();
+  }
 }
