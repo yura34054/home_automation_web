@@ -13,7 +13,6 @@ django = "~=4.2.1"
 django-environ = "~=0.11.2"
 psycopg2-binary = "~=2.9.6"
 gunicorn = "~=20.1.0"
-sensirion-gas-index-algorithm = "~=3.2.2"
 
 pandas = "~=2.1.4"
 plotly = "~=5.18.0"

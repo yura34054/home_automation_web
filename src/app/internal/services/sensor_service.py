@@ -2,16 +2,16 @@ from app.internal.models import Sensor, SensorReading
 
 
 def create_sensor_reading(
-        controller_name: str,
-        api_key: str,
-        temperature: float,
-        humidity: float,
-        carbon_dioxide: float,
-        voc_index: int,
-        nox_index: int,
-        pm1_0: float,
-        pm2_5: float,
-        pm10: float
+    controller_name: str,
+    api_key: str,
+    temperature: float,
+    humidity: float,
+    carbon_dioxide: float,
+    voc_index: int,
+    nox_index: int,
+    pm1_0: float,
+    pm2_5: float,
+    pm10: float,
 ):
     sensor = Sensor.objects.get(name=controller_name)
     if sensor.api_key != api_key:

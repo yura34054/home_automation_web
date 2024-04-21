@@ -16,9 +16,9 @@ class SensorReading(models.Model):
     voc_index = models.IntegerField()
     nox_index = models.IntegerField()
 
-    pm1_0 = models.FloatField()
-    pm2_5 = models.FloatField()
-    pm10 = models.FloatField()
+    pm1_0 = models.FloatField(verbose_name="PM1.0")
+    pm2_5 = models.FloatField(verbose_name="PM2.5")
+    pm10 = models.FloatField(verbose_name="PM10")
 
     def __str__(self):
         return f"{self.sensor}: {self.created_on}"

@@ -9,13 +9,17 @@
     {% block content %}
         {% for sensor in sensor_list %}
             {{ sensor.name }}
-            {% with reading=sensor.sensorreading_set.first %}
+            {% with reading=sensor.sensorreading_set.first %} {# this creates an N+1 problem #}
 
-                <p><a href="{% url 'temperature_chart' sensor.name %}">Temperature</a>: {{ reading.temperature }} C </p>
-                <p><a href="{% url 'humidity_chart' sensor.name %}">Humidity</a>: {{ reading.humidity }} %</p>
-                <p><a href="{% url 'carbon_dioxide_chart' sensor.name %}">Carbon dioxide</a>: {{ reading.carbon_dioxide }}ppm</p>
-                <p><a href="{% url 'voc_index_chart' sensor.name %}">VOC index</a>: {{ reading.voc_index }}</p>
-                <p><a href="{% url 'nox_index_chart' sensor.name %}">NOx index</a>: {{ reading.nox_index }}</p>
+                <p><a href="{% url 'render_chart' sensor.name "carbon_dioxide_chart" %}">Carbon dioxide</a>: {{ reading.carbon_dioxide }}ppm </p>
+                <p><a href="{% url 'render_chart' sensor.name "humidity_chart" %}">Humidity</a>: {{ reading.humidity }} % </p>
+                <p><a href="{% url 'render_chart' sensor.name "temperature_chart" %}">Temperature</a>: {{ reading.temperature }} C </p>
+                <p><a href="{% url 'render_chart' sensor.name "voc_index_chart" %}">VOC index</a>: {{ reading.voc_index }}</p>
+                <p><a href="{% url 'render_chart' sensor.name "nox_index_chart" %}">NOx index</a>: {{ reading.nox_index }}</p>
+
+                <p><a href="{% url 'render_chart' sensor.name "pm1_0_chart" %}">PM1.0</a>: {{ reading.pm1_0 }} ppm </p>
+                <p><a href="{% url 'render_chart' sensor.name "pm2_5_chart" %}">PM2.5</a>: {{ reading.pm2_5 }} ppm</p>
+                <p><a href="{% url 'render_chart' sensor.name "pm10_chart" %}">PM10</a>: {{ reading.pm10 }} ppm </p>
 
             {% endwith %}
         {% endfor %}
